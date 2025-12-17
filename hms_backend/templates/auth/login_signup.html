@@ -260,6 +260,7 @@
                     <h2>Login</h2>
                     <div class="error-message" id="login-error"></div>
                     <form onsubmit="handleLogin(event)">
+                        {% csrf_token %}
                         <div class="form-group">
                             <label for="login-username">Username</label>
                             <input type="text" id="login-username" required>
@@ -286,6 +287,7 @@
                     <h2>Patient Sign Up</h2>
                     <div class="error-message" id="patient-error"></div>
                     <form onsubmit="handlePatientSignUp(event)">
+                        {% csrf_token %}
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="patient-firstname">First Name</label>
@@ -324,6 +326,7 @@
                     <h2>Doctor Sign Up</h2>
                     <div class="error-message" id="doctor-error"></div>
                     <form onsubmit="handleDoctorSignUp(event)">
+                        {% csrf_token %}
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="doctor-firstname">First Name</label>
