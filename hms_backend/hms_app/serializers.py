@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import UserProfile, Doctor, DoctorAvailability, Appointment
+from .models import MedicalReport
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -18,6 +19,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 
 class DoctorAvailabilitySerializer(serializers.ModelSerializer):
+    # doctor will be set server-side in the view's perform_create/perform_update
+    doctor = serializers.PrimaryKeyRelatedField(read_only=True)
+
     class Meta:
         model = DoctorAvailability
         fields = ['id', 'doctor', 'day_of_week', 'start_time', 'end_time', 'is_active']
@@ -41,6 +45,22 @@ class AppointmentSerializer(serializers.ModelSerializer):
         model = Appointment
         fields = ['id', 'doctor', 'doctor_name', 'patient', 'patient_name', 
                   'appointment_date', 'start_time', 'end_time', 'reason', 'status', 'notes']
+
+
+class MedicalReportSerializer(serializers.ModelSerializer):
+    patient_name = serializers.CharField(source='patient.get_full_name', read_only=True)
+    doctor_name = serializers.SerializerMethodField(read_only=True)
+    file = serializers.FileField(required=False, allow_null=True, use_url=True)
+
+    class Meta:
+        model = MedicalReport
+        fields = ['id', 'patient', 'patient_name', 'doctor', 'doctor_name', 'report_date', 'summary', 'details', 'file_url', 'file', 'created_at']
+
+    def get_doctor_name(self, obj):
+        """Return doctor full name or 'Staff' if no doctor is set."""
+        if obj.doctor and obj.doctor.user:
+            return obj.doctor.user.get_full_name() or obj.doctor.user.username
+        return 'Staff'
 
 
 class SignUpSerializer(serializers.Serializer):

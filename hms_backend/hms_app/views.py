@@ -2,6 +2,8 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.exceptions import NotFound
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.contrib.auth import authenticate, login, logout
 import logging
 from django.contrib.auth.models import User
@@ -10,10 +12,12 @@ from django.utils import timezone
 from django.utils.decorators import method_decorator
 
 from .models import UserProfile, Doctor, DoctorAvailability, Appointment
+from .models import MedicalReport
 from .serializers import (
     UserSerializer, UserProfileSerializer, DoctorSerializer, 
     DoctorAvailabilitySerializer, AppointmentSerializer,
     SignUpSerializer, DoctorSignUpSerializer
+    , MedicalReportSerializer
 )
 from .permissions import IsDoctorOrReadOnly, IsPatientOrReadOnly, IsOwnerOrReadOnly
 
@@ -161,14 +165,14 @@ class DoctorAvailabilityViewSet(viewsets.ModelViewSet):
             doctor = Doctor.objects.get(user=self.request.user)
             serializer.save(doctor=doctor)
         except Doctor.DoesNotExist:
-            return Response({'error': 'Doctor profile not found'}, status=status.HTTP_404_NOT_FOUND)
+            raise NotFound('Doctor profile not found')
     
     def perform_update(self, serializer):
         try:
             doctor = Doctor.objects.get(user=self.request.user)
             serializer.save(doctor=doctor)
         except Doctor.DoesNotExist:
-            return Response({'error': 'Doctor profile not found'}, status=status.HTTP_404_NOT_FOUND)
+            raise NotFound('Doctor profile not found')
 
 
 # Appointment Views
@@ -236,4 +240,75 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         appointment.save()
         
         serializer = self.get_serializer(appointment)
+        return Response(serializer.data)
+
+
+class MedicalReportViewSet(viewsets.ModelViewSet):
+    """ViewSet for creating and viewing medical reports. Doctors can create and view reports for patients they have appointments with; doctors can view history."""
+    serializer_class = MedicalReportSerializer
+    permission_classes = [IsAuthenticated]
+
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_queryset(self):
+        # If doctor, return reports for patients the doctor has seen; otherwise patients can see their own reports
+        user = self.request.user
+        try:
+            profile = UserProfile.objects.get(user=user)
+        except UserProfile.DoesNotExist:
+            return MedicalReport.objects.none()
+
+        if profile.role == 'doctor':
+            try:
+                doctor = Doctor.objects.get(user=user)
+                # Reports written by this doctor or for patients this doctor has appointments with
+                patient_ids = Appointment.objects.filter(doctor=doctor).values_list('patient', flat=True).distinct()
+                return MedicalReport.objects.filter(patient__in=patient_ids)
+            except Doctor.DoesNotExist:
+                return MedicalReport.objects.none()
+        else:
+            # patient: only their own reports
+            return MedicalReport.objects.filter(patient=user)
+
+    def perform_create(self, serializer):
+        # Allow doctor's user to attach their Doctor record when creating
+        user = self.request.user
+        try:
+            doctor = Doctor.objects.get(user=user)
+            serializer.save(doctor=doctor)
+        except Doctor.DoesNotExist:
+            # allow admin/staff to create without doctor
+            serializer.save()
+
+    def list(self, request, *args, **kwargs):
+        # Support filtering by patient_id via query param
+        qs = self.get_queryset()
+        patient_id = request.query_params.get('patient_id')
+        if patient_id:
+            try:
+                patient = User.objects.get(id=patient_id)
+            except User.DoesNotExist:
+                return Response({'error': 'Patient not found'}, status=status.HTTP_404_NOT_FOUND)
+
+            # If requester is doctor, verify they have appointments with this patient
+            try:
+                profile = UserProfile.objects.get(user=request.user)
+            except UserProfile.DoesNotExist:
+                return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+            if profile.role == 'doctor':
+                try:
+                    doctor = Doctor.objects.get(user=request.user)
+                    if not Appointment.objects.filter(doctor=doctor, patient=patient).exists():
+                        return Response({'error': 'No access to this patient'}, status=status.HTTP_403_FORBIDDEN)
+                except Doctor.DoesNotExist:
+                    return Response({'error': 'Doctor profile not found'}, status=status.HTTP_404_NOT_FOUND)
+            else:
+                # patients can only request their own id
+                if request.user.id != int(patient_id):
+                    return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+            qs = qs.filter(patient=patient)
+
+        serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)

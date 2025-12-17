@@ -118,3 +118,7 @@ CORS_ALLOWED_ORIGINS = [
 
 # Email settings (for serverless integration)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Media files (uploads)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

@@ -8,6 +8,7 @@ class UserProfile(models.Model):
     ROLE_CHOICES = [
         ('doctor', 'Doctor'),
         ('patient', 'Patient'),
+        ('nurse', 'Nurse'),
     ]
     
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
@@ -97,3 +98,21 @@ class Appointment(models.Model):
     class Meta:
         ordering = ['-appointment_date', '-start_time']
         unique_together = ['doctor', 'appointment_date', 'start_time']
+
+
+class MedicalReport(models.Model):
+    """Medical reports / history entries for a patient"""
+    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='medical_reports')
+    doctor = models.ForeignKey(Doctor, on_delete=models.SET_NULL, null=True, blank=True, related_name='written_reports')
+    report_date = models.DateField(auto_now_add=True)
+    summary = models.CharField(max_length=255, blank=True, null=True)
+    details = models.TextField(blank=True, null=True)
+    file_url = models.URLField(blank=True, null=True)
+    file = models.FileField(upload_to='medical_reports/', blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Report for {self.patient.username} on {self.report_date}"
+
+    class Meta:
+        ordering = ['-report_date', '-created_at']

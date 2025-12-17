@@ -4,6 +4,8 @@ URL configuration for HMS
 from django.contrib import admin
 from django.urls import path, include
 from hms_app.template_views import HomeView, DoctorDashboardView, PatientDashboardView
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('', HomeView.as_view(), name='home'),
@@ -13,4 +15,8 @@ urlpatterns = [
     path('api/auth/', include('hms_app.urls.auth')),
     path('api/doctors/', include('hms_app.urls.doctors')),
     path('api/appointments/', include('hms_app.urls.appointments')),
+    path('api/medical_reports/', include('hms_app.urls.medical_reports')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
