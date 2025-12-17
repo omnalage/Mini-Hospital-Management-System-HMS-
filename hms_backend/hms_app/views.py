@@ -212,17 +212,19 @@ class AppointmentViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['post'])
     def book_appointment(self, request):
+        from django.db import IntegrityError
+
         doctor_id = request.data.get('doctor_id')
         appointment_date = request.data.get('appointment_date')
         start_time = request.data.get('start_time')
         end_time = request.data.get('end_time')
         reason = request.data.get('reason', '')
-        
+
         try:
             doctor = Doctor.objects.get(id=doctor_id)
         except Doctor.DoesNotExist:
             return Response({'error': 'Doctor not found'}, status=status.HTTP_404_NOT_FOUND)
-        
+
         # Check if appointment already exists
         if Appointment.objects.filter(
             doctor=doctor,
@@ -231,19 +233,23 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             status='scheduled'
         ).exists():
             return Response({'error': 'Time slot already booked'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        appointment = Appointment.objects.create(
-            doctor=doctor,
-            patient=request.user,
-            appointment_date=appointment_date,
-            start_time=start_time,
-            end_time=end_time,
-            reason=reason,
-            status='scheduled'
-        )
-        
-        serializer = self.get_serializer(appointment)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        try:
+            appointment = Appointment.objects.create(
+                doctor=doctor,
+                patient=request.user,
+                appointment_date=appointment_date,
+                start_time=start_time,
+                end_time=end_time,
+                reason=reason,
+                status='scheduled'
+            )
+
+            serializer = self.get_serializer(appointment)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except IntegrityError as e:
+            logger.error('IntegrityError booking appointment: %s', str(e))
+            return Response({'error': 'This time slot is already booked. Please select a different time.'}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['post'])
     def reschedule(self, request):

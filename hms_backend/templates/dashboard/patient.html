@@ -492,36 +492,51 @@
         let cachedDoctors = [];
         
         function handleLogout() {
+            isAutoLogoutDisabled = true;
+            if (autoLogoutTimer) clearTimeout(autoLogoutTimer);
+            console.log('[AUTO-LOGOUT] Manual logout triggered. Clearing timer.');
             localStorage.removeItem('user');
             window.location.href = '/';
         }
 
-                // Auto-logout after inactivity (10 minutes)
-                let autoLogoutTimer = null;
-                const AUTO_LOGOUT_MS = 10 * 60 * 1000; // 10 minutes
+        // Auto-logout after inactivity (10 minutes)
+        let autoLogoutTimer = null;
+        const AUTO_LOGOUT_MS = 10 * 60 * 1000; // 10 minutes
+        let autoLogoutStartTime = null;
+        let isAutoLogoutDisabled = false;
 
-                function handleAutoLogout() {
-                    (async () => {
-                        try {
-                            await apiRequest('/auth/logout/', { method: 'POST' });
-                        } catch (e) {}
-                        alert('You have been logged out due to inactivity');
-                        window.location.href = '/';
-                    })();
+        function handleAutoLogout() {
+            console.warn('[AUTO-LOGOUT] Inactivity timeout triggered');
+            (async () => {
+                try {
+                    await apiRequest('/auth/logout/', { method: 'POST' });
+                } catch (e) {
+                    console.warn('[AUTO-LOGOUT] Server logout failed:', e);
                 }
+                alert('You have been logged out due to inactivity');
+                window.location.href = '/';
+            })();
+        }
 
-                function startAutoLogoutTimer() {
-                    if (autoLogoutTimer) clearTimeout(autoLogoutTimer);
-                    autoLogoutTimer = setTimeout(handleAutoLogout, AUTO_LOGOUT_MS);
-                }
+        function startAutoLogoutTimer() {
+            if (isAutoLogoutDisabled) return;
+            if (autoLogoutTimer) clearTimeout(autoLogoutTimer);
+            autoLogoutStartTime = Date.now();
+            autoLogoutTimer = setTimeout(handleAutoLogout, AUTO_LOGOUT_MS);
+            const nextLogoutMin = (AUTO_LOGOUT_MS / 60000).toFixed(0);
+            console.log(`[AUTO-LOGOUT] Timer started. Will logout in ${nextLogoutMin} minutes at ${new Date(Date.now() + AUTO_LOGOUT_MS).toLocaleTimeString()}`);
+        }
 
-                function resetAutoLogoutTimer() {
-                    startAutoLogoutTimer();
-                }
+        function resetAutoLogoutTimer() {
+            if (isAutoLogoutDisabled) return;
+            const elapsed = autoLogoutStartTime ? ((Date.now() - autoLogoutStartTime) / 60000).toFixed(1) : '?';
+            console.log(`[AUTO-LOGOUT] Activity detected (${elapsed} min elapsed). Resetting timer...`);
+            startAutoLogoutTimer();
+        }
 
-                ['click', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
-                    window.addEventListener(evt, resetAutoLogoutTimer, { passive: true });
-                });
+        ['click', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
+            window.addEventListener(evt, resetAutoLogoutTimer, { passive: true });
+        });
         
         async function initializeDashboard() {
             try {
@@ -534,6 +549,7 @@
                 loadAvailableDoctors();
                 loadMyAppointments();
                 // start inactivity auto-logout timer
+                console.log('[AUTO-LOGOUT] Dashboard initialized. Starting auto-logout timer...');
                 startAutoLogoutTimer();
             } catch (error) {
                 console.error('Failed to initialize dashboard:', error);
