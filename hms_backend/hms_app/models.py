@@ -100,10 +100,27 @@ class Appointment(models.Model):
         unique_together = ['doctor', 'appointment_date', 'start_time']
 
 
+class Nurse(models.Model):
+    """Nurse profile for hospital staff"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='nurse_profile')
+    employee_id = models.CharField(max_length=50, unique=True)
+    department = models.CharField(max_length=100, blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Nurse {self.user.get_full_name()}"
+
+    class Meta:
+        ordering = ['user__first_name', 'user__last_name']
+
+
 class MedicalReport(models.Model):
     """Medical reports / history entries for a patient"""
     patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='medical_reports')
     doctor = models.ForeignKey(Doctor, on_delete=models.SET_NULL, null=True, blank=True, related_name='written_reports')
+    nurse = models.ForeignKey(Nurse, on_delete=models.SET_NULL, null=True, blank=True, related_name='uploaded_reports')
     report_date = models.DateField(auto_now_add=True)
     summary = models.CharField(max_length=255, blank=True, null=True)
     details = models.TextField(blank=True, null=True)

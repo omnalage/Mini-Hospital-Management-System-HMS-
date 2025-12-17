@@ -281,6 +281,13 @@
         </div>
     </div>
     
+    <!-- JS error banner (hidden unless an error occurs) -->
+    <div id="js-error-banner" style="display:none; background:#ffe6e6; color:#660000; padding:10px 16px; border-bottom:1px solid #ffcccc; text-align:left; font-size:13px;
+                position:relative;">
+        <strong>JavaScript error:</strong> <span id="js-error-message"></span>
+        <button style="position:absolute; right:8px; top:6px; background:transparent; border:none; font-size:16px; cursor:pointer;" onclick="document.getElementById('js-error-banner').style.display='none'">&times;</button>
+    </div>
+
     <div class="container">
         <div class="header">
             <h1>Welcome, <span id="welcome-name"></span></h1>
@@ -374,7 +381,8 @@
                         <div class="modal-content">
                             <span class="modal-close" onclick="closeReportModal()">&times;</span>
                             <h2>Patient Medical History</h2>
-                            <div id="report-patient-name" style="font-weight:600; margin-bottom:10px;"></div>
+                            <div id="report-patient-name" style="font-weight:600; margin-bottom:6px;"></div>
+                            <div id="report-patient-info" style="font-size:13px;color:#666;margin-bottom:10px;"></div>
                             <div id="reports-list" style="max-height: 220px; overflow:auto; margin-bottom:10px; border-top:1px solid #eee; padding-top:10px;"></div>
                             <div id="report-detail" style="padding:10px; border-top:1px solid #f0f0f0; margin-bottom:8px; display:none"></div>
                             <div style="display:flex; gap:10px; justify-content:space-between; align-items:center;">
@@ -394,6 +402,7 @@
                             <div class="success-message" id="report-success">Report saved successfully!</div>
                             <form id="add-report-form" onsubmit="handleAddReport(event)">
                                 <input type="hidden" id="report-patient-id">
+                                <input type="hidden" id="report-id">
                                 <div class="form-group">
                                     <label for="report-summary">Summary</label>
                                     <input id="report-summary" required />
@@ -406,11 +415,14 @@
                                     <label for="report-file-input">Attach File (optional)</label>
                                     <input id="report-file-input" type="file" />
                                 </div>
-                                <button type="submit" class="btn btn-primary">Save Report</button>
+                                <button type="submit" class="btn btn-primary" id="report-save-btn">Save Report</button>
                             </form>
                         </div>
                     </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Add Slot</button>
+                <div style="display:flex; gap:10px; margin-top:8px;">
+                    <button type="button" class="btn btn-primary" id="add-slot-save-btn" onclick="handleAddSlot(event, false)" style="flex:1">Add & Close</button>
+                    <button type="button" class="btn btn-secondary" onclick="handleAddSlot(event, true)" style="flex:1">Add Another</button>
+                </div>
             </form>
         </div>
     </div>
@@ -419,6 +431,30 @@
         // Use relative API path so requests are same-origin and cookies are sent
         const API_URL = '/api';
         let currentUser = null;
+
+        // Global JS error handlers to surface runtime issues in the page
+        function showJSError(msg) {
+            try {
+                const banner = document.getElementById('js-error-banner');
+                const msgEl = document.getElementById('js-error-message');
+                if (msgEl) msgEl.textContent = String(msg);
+                if (banner) banner.style.display = 'block';
+            } catch (e) {
+                console.error('Failed to show JS error banner', e);
+            }
+        }
+
+        window.addEventListener('error', function (ev) {
+            const message = ev && ev.message ? ev.message : String(ev);
+            console.error('Unhandled error event:', ev.error || message);
+            showJSError(message || 'Unhandled error');
+        });
+
+        window.addEventListener('unhandledrejection', function (ev) {
+            const reason = ev && ev.reason ? (ev.reason.message || JSON.stringify(ev.reason)) : String(ev);
+            console.error('Unhandled promise rejection:', ev.reason || ev);
+            showJSError('Promise rejection: ' + reason);
+        });
 
         // Helper to read cookie values (CSRF token)
         function getCookie(name) {
@@ -483,6 +519,37 @@
             localStorage.removeItem('user');
             window.location.href = '/';
         }
+
+        // Auto-logout after inactivity (10 minutes)
+        let autoLogoutTimer = null;
+        const AUTO_LOGOUT_MS = 10 * 60 * 1000; // 10 minutes
+
+        function handleAutoLogout() {
+            // attempt server logout then redirect
+            (async () => {
+                try {
+                    await apiRequest('/auth/logout/', { method: 'POST' });
+                } catch (e) {
+                    // ignore
+                }
+                alert('You have been logged out due to inactivity');
+                window.location.href = '/';
+            })();
+        }
+
+        function startAutoLogoutTimer() {
+            if (autoLogoutTimer) clearTimeout(autoLogoutTimer);
+            autoLogoutTimer = setTimeout(handleAutoLogout, AUTO_LOGOUT_MS);
+        }
+
+        function resetAutoLogoutTimer() {
+            startAutoLogoutTimer();
+        }
+
+        // Reset timer on common user interactions
+        ['click', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
+            window.addEventListener(evt, resetAutoLogoutTimer, { passive: true });
+        });
         
         async function initializeDashboard() {
             try {
@@ -495,6 +562,8 @@
                 loadDoctorProfile();
                 loadAvailabilitySlots();
                 loadAppointments();
+                // start inactivity auto-logout timer
+                startAutoLogoutTimer();
             } catch (error) {
                 console.error('Failed to initialize dashboard:', error);
                 window.location.href = '/';
@@ -563,7 +632,7 @@
                     document.getElementById('appointments-table').style.display = 'table';
                     tbody.innerHTML = appointments.map(apt => `
                         <tr>
-                            <td>${apt.patient_name}</td>
+                            <td><a href="#" onclick="viewAppointment(${apt.id});return false;">${apt.patient_name}</a></td>
                             <td>${apt.appointment_date}</td>
                             <td>${apt.start_time}</td>
                             <td>${apt.reason || '-'}</td>
@@ -588,8 +657,8 @@
             document.getElementById('slot-success').classList.remove('show');
         }
         
-        async function handleAddSlot(event) {
-            event.preventDefault();
+        async function handleAddSlot(event, keepOpen = false) {
+            if (event && typeof event.preventDefault === 'function') event.preventDefault();
 
             const data = {
                 day_of_week: elSlotDay().value,
@@ -607,18 +676,37 @@
                     await apiRequest('/doctors/availability/', { method: 'POST', body: data });
                     document.getElementById('slot-success').textContent = 'Slot added successfully!';
                 }
+
                 document.getElementById('slot-success').classList.add('show');
-                setTimeout(() => {
-                    closeAddSlotModal();
-                    loadAvailabilitySlots();
-                }, 1500);
+                // refresh list so user sees the newly added slot
+                await loadAvailabilitySlots();
+
+                if (keepOpen) {
+                    // clear inputs so user can add another slot quickly
+                    elSlotDay().value = '';
+                    elSlotStart().value = '';
+                    elSlotEnd().value = '';
+                    editingSlotId = null;
+                    // keep modal open and update button text
+                    document.getElementById('add-slot-modal').classList.add('active');
+                    document.getElementById('add-slot-save-btn').textContent = 'Add & Close';
+                    // keep the success message for a short moment
+                    setTimeout(() => {
+                        document.getElementById('slot-success').classList.remove('show');
+                    }, 1000);
+                } else {
+                    // close modal after brief confirmation
+                    setTimeout(() => {
+                        closeAddSlotModal();
+                        loadAvailabilitySlots();
+                    }, 800);
+                }
             } catch (error) {
                 console.error('Failed to add/update slot:', error);
                 const message = sanitizeError(error.body) || `Failed to save slot (status ${error.status || 'error'})`;
                 alert(message);
             } finally {
                 editingSlotId = null;
-                document.querySelector('#add-slot-modal .btn-primary').textContent = 'Add Slot';
             }
         }
         
@@ -657,16 +745,45 @@
         const REPORTS_PER_PAGE = 6;
 
         async function viewAppointment(appointmentId) {
+            console.log('viewAppointment called for id=', appointmentId);
+            // Open modal early so user gets immediate feedback
+            openReportModal();
             try {
                 const apt = await apiRequest(`/appointments/${appointmentId}/`);
                 currentReportPatientId = apt.patient;
                 currentReportPatientName = apt.patient_name || apt.patient;
-                // Open report modal and load reports for this patient
-                openReportModal();
-                await loadReports(currentReportPatientId);
+                document.getElementById('report-patient-name').textContent = currentReportPatientName;
+
+                // Fetch patient profile (if allowed) and show patient details (non-blocking)
+                (async () => {
+                    try {
+                        const profile = await apiRequest(`/users/${currentReportPatientId}/`);
+                        const p = profile || {};
+                        const user = p.user || {};
+                        const info = [];
+                        if (user.email) info.push(`<strong>Email:</strong> ${user.email}`);
+                        if (p.phone_number) info.push(`<strong>Phone:</strong> ${p.phone_number}`);
+                        if (p.role) info.push(`<strong>Role:</strong> ${p.role}`);
+                        if (p.created_at) info.push(`<strong>Member since:</strong> ${new Date(p.created_at).toLocaleDateString()}`);
+                        document.getElementById('report-patient-info').innerHTML = info.join(' &nbsp; | &nbsp; ');
+                    } catch (e) {
+                        console.warn('Could not fetch patient profile:', e);
+                        document.getElementById('report-patient-info').innerHTML = '';
+                    }
+                })();
+
+                // Load reports for this patient (show errors inside modal)
+                try {
+                    await loadReports(currentReportPatientId);
+                } catch (e) {
+                    console.error('Error loading reports after appointment view:', e);
+                    document.getElementById('reports-list').innerHTML = `<p style="color:#c00">${sanitizeError(e.body) || 'Failed to load reports'}</p>`;
+                }
+
             } catch (error) {
                 console.error('Failed to load appointment:', error);
-                alert(sanitizeError(error.body) || 'Failed to load appointment');
+                // show error inside modal rather than silent failure
+                document.getElementById('reports-list').innerHTML = `<p style="color:#c00">${sanitizeError(error.body) || 'Failed to load appointment'}</p>`;
             }
         }
 
@@ -719,6 +836,7 @@
                         </div>
                         <div style="display:flex; gap:8px;">
                             <button class="btn btn-secondary" onclick="showReportDetails(${r.id})">View</button>
+                            ${ (typeof currentUser !== 'undefined' && (currentUser.role === 'nurse' || (currentUser.user && currentUser.user.id === r.doctor_user))) ? `<button class="btn btn-secondary" onclick="openEditReport(${r.id})">Edit</button>` : '' }
                         </div>
                     </div>
                 </div>
@@ -752,14 +870,33 @@
             }
         }
 
+        async function openEditReport(reportId) {
+            try {
+                const r = await apiRequest(`/medical_reports/${reportId}/`);
+                document.getElementById('report-id').value = r.id;
+                document.getElementById('report-patient-id').value = r.patient || currentReportPatientId || '';
+                document.getElementById('report-summary').value = r.summary || '';
+                document.getElementById('report-details').value = r.details || '';
+                // Note: file inputs cannot be set programmatically for security; user may attach new file to replace
+                document.getElementById('report-save-btn').textContent = 'Update Report';
+                document.getElementById('report-success').classList.remove('show');
+                document.getElementById('add-report-modal').classList.add('active');
+            } catch (error) {
+                console.error('Failed to load report for editing:', error);
+                alert(sanitizeError(error.body) || 'Failed to load report for editing');
+            }
+        }
+
         function openAddReportModal(patientId) {
             if (patientId) currentReportPatientId = patientId;
             document.getElementById('report-patient-id').value = currentReportPatientId || '';
+            document.getElementById('report-id').value = '';
             document.getElementById('report-summary').value = '';
             document.getElementById('report-details').value = '';
             const fileInput = document.getElementById('report-file-input');
             if (fileInput) fileInput.value = null;
             document.getElementById('report-success').classList.remove('show');
+            document.getElementById('report-save-btn').textContent = 'Save Report';
             document.getElementById('add-report-modal').classList.add('active');
         }
 
@@ -771,6 +908,7 @@
         async function handleAddReport(event) {
             event.preventDefault();
             const patientVal = document.getElementById('report-patient-id').value || currentReportPatientId;
+            const editingId = (document.getElementById('report-id') && document.getElementById('report-id').value) || '';
             if (!patientVal) {
                 alert('No patient selected');
                 return;
@@ -788,14 +926,22 @@
                     fd.append('summary', document.getElementById('report-summary').value);
                     fd.append('details', document.getElementById('report-details').value);
                     fd.append('file', fileInput.files[0]);
-                    await apiRequest('/medical_reports/', { method: 'POST', body: fd, json: false });
+                    if (editingId) {
+                        await apiRequest(`/medical_reports/${editingId}/`, { method: 'PUT', body: fd, json: false });
+                    } else {
+                        await apiRequest('/medical_reports/', { method: 'POST', body: fd, json: false });
+                    }
                 } else {
                     const payload = {
                         patient: parseInt(patientVal, 10),
                         summary: document.getElementById('report-summary').value,
                         details: document.getElementById('report-details').value
                     };
-                    await apiRequest('/medical_reports/', { method: 'POST', body: payload });
+                    if (editingId) {
+                        await apiRequest(`/medical_reports/${editingId}/`, { method: 'PUT', body: payload });
+                    } else {
+                        await apiRequest('/medical_reports/', { method: 'POST', body: payload });
+                    }
                 }
                 document.getElementById('report-success').classList.add('show');
                 // reload reports

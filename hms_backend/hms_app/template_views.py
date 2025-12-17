@@ -44,3 +44,20 @@ class PatientDashboardView(LoginRequiredMixin, TemplateView):
             return redirect('/')
         
         return super().get(request, *args, **kwargs)
+
+
+class NurseDashboardView(LoginRequiredMixin, TemplateView):
+    """Nurse dashboard page"""
+    template_name = 'dashboard/nurse.html'
+    login_url = '/'
+    
+    def get(self, request, *args, **kwargs):
+        # Check if user is a nurse
+        try:
+            profile = UserProfile.objects.get(user=request.user)
+            if profile.role != 'nurse':
+                return redirect('/')
+        except UserProfile.DoesNotExist:
+            return redirect('/')
+        
+        return super().get(request, *args, **kwargs)

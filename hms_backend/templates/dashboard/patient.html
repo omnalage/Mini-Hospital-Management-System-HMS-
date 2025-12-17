@@ -495,6 +495,33 @@
             localStorage.removeItem('user');
             window.location.href = '/';
         }
+
+                // Auto-logout after inactivity (10 minutes)
+                let autoLogoutTimer = null;
+                const AUTO_LOGOUT_MS = 10 * 60 * 1000; // 10 minutes
+
+                function handleAutoLogout() {
+                    (async () => {
+                        try {
+                            await apiRequest('/auth/logout/', { method: 'POST' });
+                        } catch (e) {}
+                        alert('You have been logged out due to inactivity');
+                        window.location.href = '/';
+                    })();
+                }
+
+                function startAutoLogoutTimer() {
+                    if (autoLogoutTimer) clearTimeout(autoLogoutTimer);
+                    autoLogoutTimer = setTimeout(handleAutoLogout, AUTO_LOGOUT_MS);
+                }
+
+                function resetAutoLogoutTimer() {
+                    startAutoLogoutTimer();
+                }
+
+                ['click', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
+                    window.addEventListener(evt, resetAutoLogoutTimer, { passive: true });
+                });
         
         async function initializeDashboard() {
             try {
@@ -506,6 +533,8 @@
 
                 loadAvailableDoctors();
                 loadMyAppointments();
+                // start inactivity auto-logout timer
+                startAutoLogoutTimer();
             } catch (error) {
                 console.error('Failed to initialize dashboard:', error);
                 window.location.href = '/';

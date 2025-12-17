@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import UserProfile, Doctor, DoctorAvailability, Appointment
-from .models import MedicalReport
+from .models import MedicalReport, Nurse
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -50,11 +50,13 @@ class AppointmentSerializer(serializers.ModelSerializer):
 class MedicalReportSerializer(serializers.ModelSerializer):
     patient_name = serializers.CharField(source='patient.get_full_name', read_only=True)
     doctor_name = serializers.SerializerMethodField(read_only=True)
+    doctor_user = serializers.IntegerField(source='doctor.user.id', read_only=True, allow_null=True)
+    nurse_user = serializers.IntegerField(source='nurse.user.id', read_only=True, allow_null=True)
     file = serializers.FileField(required=False, allow_null=True, use_url=True)
 
     class Meta:
         model = MedicalReport
-        fields = ['id', 'patient', 'patient_name', 'doctor', 'doctor_name', 'report_date', 'summary', 'details', 'file_url', 'file', 'created_at']
+        fields = ['id', 'patient', 'patient_name', 'doctor', 'doctor_user', 'doctor_name', 'nurse_user', 'report_date', 'summary', 'details', 'file_url', 'file', 'created_at']
 
     def get_doctor_name(self, obj):
         """Return doctor full name or 'Staff' if no doctor is set."""
@@ -69,7 +71,7 @@ class SignUpSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, min_length=8)
     first_name = serializers.CharField(max_length=150, required=False)
     last_name = serializers.CharField(max_length=150, required=False)
-    role = serializers.ChoiceField(choices=['doctor', 'patient'])
+    role = serializers.ChoiceField(choices=['doctor', 'patient', 'nurse'])
     phone_number = serializers.CharField(max_length=20, required=False)
     
     def validate_username(self, value):
@@ -116,3 +118,29 @@ class DoctorSignUpSerializer(SignUpSerializer):
         )
         
         return user
+
+
+class NurseSignUpSerializer(SignUpSerializer):
+    employee_id = serializers.CharField(max_length=50)
+    department = serializers.CharField(max_length=100, required=False)
+    
+    def create(self, validated_data):
+        # Update role to nurse before parent create
+        validated_data['role'] = 'nurse'
+        user = super().create(validated_data)
+        
+        Nurse.objects.create(
+            user=user,
+            employee_id=validated_data['employee_id'],
+            department=validated_data.get('department', ''),
+        )
+        
+        return user
+
+
+class NurseSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    
+    class Meta:
+        model = Nurse
+        fields = ['id', 'user', 'employee_id', 'department', 'is_active']

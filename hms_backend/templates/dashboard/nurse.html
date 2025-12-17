@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nurse Dashboard - HMS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+        }
+        
+        .navbar {
+            background: white;
+            padding: 15px 30px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar-brand {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .navbar-menu {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .navbar-menu a, .logout-btn {
+            color: #666;
+            text-decoration: none;
+            padding: 8px 15px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 14px;
+        }
+        
+        .logout-btn {
+            background: #667eea;
+            color: white;
+            border-radius: 5px;
+        }
+        
+        .logout-btn:hover {
+            background: #764ba2;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 15px;
+        }
+        
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .search-bar input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #764ba2;
+        }
+        
+        .btn-secondary {
+            background: #ddd;
+            color: #333;
+        }
+        
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #da190b;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .table th {
+            background: #f5f5f5;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #ddd;
+        }
+        
+        .table td {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .table tr:hover {
+            background: #f9f9f9;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-scheduled {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .status-completed {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+        
+        .status-cancelled {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .modal-close:hover {
+            color: #333;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .appointment-card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            background: #fafafa;
+        }
+        
+        .appointment-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .appointment-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .appointment-info p {
+            margin: 5px 0;
+        }
+        
+        .appointment-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-sm {
+            padding: 8px 15px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-brand">🏥 HMS - Nurse Dashboard</div>
+        <div class="navbar-menu">
+            <a href="#appointments">Appointments</a>
+            <a href="#upload-reports">Upload Reports</a>
+            <span id="nurse-name" style="color: #666;"></span>
+            <button class="logout-btn" onclick="handleLogout()">Logout</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>Welcome, <span id="welcome-name"></span></h1>
+            <p>Manage appointments and patient medical reports</p>
+        </div>
+        
+        <!-- Appointments Section -->
+        <div class="section-title" id="appointments">📅 All Appointments</div>
+        <div class="card">
+            <div class="search-bar">
+                <input type="text" id="search-input" placeholder="Search by patient or doctor name...">
+                <button class="btn btn-secondary" onclick="searchAppointments()">Search</button>
+            </div>
+            <div id="appointments-list"></div>
+            <div class="empty-state" id="no-appointments">
+                <p>No appointments found</p>
+            </div>
+        </div>
+        
+        <!-- Upload Reports Section -->
+        <div class="section-title" id="upload-reports">📋 Upload Patient Reports</div>
+        <div class="card">
+            <form onsubmit="handleUploadReport(event)">
+                <div class="form-group">
+                    <label for="patient-search">Search Patient</label>
+                    <input type="text" id="patient-search" placeholder="Search by patient name...">
+                    <div id="patient-results" style="margin-top:10px;"></div>
+                </div>
+                
+                <div class="form-group" id="selected-patient-group" style="display:none;">
+                    <label>Selected Patient:</label>
+                    <input type="text" id="selected-patient-name" disabled>
+                    <input type="hidden" id="selected-patient-id">
+                </div>
+                
+                <div class="form-group">
+                    <label for="report-summary">Report Summary</label>
+                    <input type="text" id="report-summary" placeholder="Brief summary of report..." required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="report-details">Report Details</label>
+                    <textarea id="report-details" placeholder="Detailed report information..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="report-file">Attach File (Optional)</label>
+                    <input type="file" id="report-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Upload Report</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Reschedule Appointment Modal -->
+    <div class="modal" id="reschedule-modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeRescheduleModal()">&times;</span>
+            <h2>Reschedule Appointment</h2>
+            <form onsubmit="handleRescheduleAppointment(event)">
+                <div class="form-group">
+                    <label>Patient Name</label>
+                    <input type="text" id="reschedule-patient" disabled>
+                </div>
+                
+                <div class="form-group">
+                    <label>Doctor Name</label>
+                    <input type="text" id="reschedule-doctor" disabled>
+                </div>
+                
+                <div class="form-group">
+                    <label for="new-date">New Date</label>
+                    <input type="date" id="new-date" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="new-start-time">Start Time</label>
+                    <input type="time" id="new-start-time" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="new-end-time">End Time</label>
+                    <input type="time" id="new-end-time" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Reschedule</button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = '/api';
+        let currentUser = null;
+        let currentAppointmentId = null;
+        let cachedAppointments = [];
+        let cachedPatients = [];
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return '';
+        }
+
+        function sanitizeError(err) {
+            if (!err) return '';
+            if (typeof err !== 'string') return String(err);
+            const stripped = err.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+            if (stripped.length > 0) return stripped;
+            return 'Server error';
+        }
+
+        async function apiRequest(path, opts = {}) {
+            const method = (opts.method || 'GET').toUpperCase();
+            const headers = Object.assign({}, opts.headers || {});
+            if (opts.json !== false && method !== 'GET' && !headers['Content-Type']) {
+                headers['Content-Type'] = 'application/json';
+            }
+            if (!opts.skipCsrf && method !== 'GET') {
+                headers['X-CSRFToken'] = getCookie('csrftoken');
+            }
+
+            const res = await fetch(`${API_URL}${path}`, {
+                method,
+                headers,
+                credentials: 'include',
+                body: opts.body && headers['Content-Type'] === 'application/json' ? JSON.stringify(opts.body) : opts.body
+            });
+
+            const ct = res.headers.get('content-type') || '';
+            let body = null;
+            try {
+                if (ct.includes('application/json')) body = await res.json();
+                else body = await res.text();
+            } catch (e) {
+                body = null;
+            }
+
+            if (!res.ok) {
+                const errMsg = (body && (body.error || JSON.stringify(body))) || body || `HTTP ${res.status}`;
+                throw { status: res.status, body: errMsg };
+            }
+
+            return body;
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('user');
+            window.location.href = '/';
+        }
+
+        // Auto-logout after inactivity (10 minutes)
+        let autoLogoutTimer = null;
+        const AUTO_LOGOUT_MS = 10 * 60 * 1000; // 10 minutes
+
+        function handleAutoLogout() {
+            (async () => {
+                try {
+                    await apiRequest('/auth/logout/', { method: 'POST' });
+                } catch (e) {}
+                alert('You have been logged out due to inactivity');
+                window.location.href = '/';
+            })();
+        }
+
+        function startAutoLogoutTimer() {
+            if (autoLogoutTimer) clearTimeout(autoLogoutTimer);
+            autoLogoutTimer = setTimeout(handleAutoLogout, AUTO_LOGOUT_MS);
+        }
+
+        function resetAutoLogoutTimer() {
+            startAutoLogoutTimer();
+        }
+
+        ['click', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
+            window.addEventListener(evt, resetAutoLogoutTimer, { passive: true });
+        });
+        
+        async function initializeDashboard() {
+            try {
+                const data = await apiRequest('/auth/current_user/');
+                currentUser = data;
+
+                document.getElementById('welcome-name').textContent = currentUser.user.first_name || currentUser.user.username;
+                document.getElementById('nurse-name').textContent = currentUser.user.first_name || currentUser.user.username;
+
+                loadAppointments();
+                // start inactivity auto-logout timer
+                startAutoLogoutTimer();
+            } catch (error) {
+                console.error('Failed to initialize dashboard:', error);
+                window.location.href = '/';
+            }
+        }
+        
+        async function loadAppointments() {
+            try {
+                const appointments = await apiRequest('/appointments/');
+                cachedAppointments = appointments || [];
+                renderAppointments(cachedAppointments);
+            } catch (error) {
+                console.error('Failed to load appointments:', error);
+            }
+        }
+
+        function renderAppointments(appointments) {
+            const list = document.getElementById('appointments-list');
+            const noAppointments = document.getElementById('no-appointments');
+
+            if (!appointments || appointments.length === 0) {
+                list.innerHTML = '';
+                noAppointments.style.display = 'block';
+                return;
+            }
+
+            noAppointments.style.display = 'none';
+            list.innerHTML = appointments.map(apt => `
+                <div class="appointment-card">
+                    <h3>${apt.patient_name} → Dr. ${apt.doctor_name}</h3>
+                    <div class="appointment-info">
+                        <p><strong>Date:</strong> ${apt.appointment_date}</p>
+                        <p><strong>Time:</strong> ${apt.start_time} - ${apt.end_time}</p>
+                        <p><strong>Status:</strong> <span class="status-badge status-${apt.status}">${apt.status.toUpperCase()}</span></p>
+                        <p><strong>Reason:</strong> ${apt.reason || '-'}</p>
+                    </div>
+                    <div class="appointment-actions">
+                        <button class="btn btn-primary btn-sm" onclick="openRescheduleModal(${apt.id}, '${apt.patient_name}', '${apt.doctor_name}')">Reschedule</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function debounce(fn, wait) {
+            let t = null;
+            return function (...args) {
+                clearTimeout(t);
+                t = setTimeout(() => fn.apply(this, args), wait);
+            };
+        }
+
+        const doSearch = () => {
+            const q = (document.getElementById('search-input').value || '').toLowerCase().trim();
+            const filtered = cachedAppointments.filter(apt => {
+                const pName = (apt.patient_name || '').toLowerCase();
+                const dName = (apt.doctor_name || '').toLowerCase();
+                return !q || pName.includes(q) || dName.includes(q);
+            });
+            renderAppointments(filtered);
+        };
+
+        const searchAppointments = debounce(doSearch, 250);
+
+        function openRescheduleModal(appointmentId, patientName, doctorName) {
+            currentAppointmentId = appointmentId;
+            document.getElementById('reschedule-patient').value = patientName;
+            document.getElementById('reschedule-doctor').value = doctorName;
+            document.getElementById('reschedule-modal').classList.add('active');
+        }
+
+        function closeRescheduleModal() {
+            document.getElementById('reschedule-modal').classList.remove('active');
+            currentAppointmentId = null;
+        }
+
+        async function handleRescheduleAppointment(event) {
+            event.preventDefault();
+            
+            const data = {
+                appointment_id: currentAppointmentId,
+                appointment_date: document.getElementById('new-date').value,
+                start_time: document.getElementById('new-start-time').value,
+                end_time: document.getElementById('new-end-time').value
+            };
+
+            try {
+                const result = await apiRequest('/appointments/reschedule/', { method: 'POST', body: data });
+                alert('Appointment rescheduled successfully!');
+                closeRescheduleModal();
+                loadAppointments();
+            } catch (error) {
+                console.error('Failed to reschedule:', error);
+                alert(sanitizeError(error.body) || `Failed to reschedule (status ${error.status})`);
+            }
+        }
+
+        // Patient search for report upload
+        async function searchPatient(query) {
+            if (!query || query.length < 2) {
+                document.getElementById('patient-results').innerHTML = '';
+                return;
+            }
+
+            try {
+                const doctors = await apiRequest('/doctors/');
+                // For now, search by patient appointments
+                const appointments = await apiRequest('/appointments/');
+                const patients = new Map();
+                
+                appointments.forEach(apt => {
+                    const key = apt.patient;
+                    if (!patients.has(key)) {
+                        patients.set(key, apt.patient_name);
+                    }
+                });
+
+                const q = query.toLowerCase();
+                const results = Array.from(patients.entries()).filter(([id, name]) => 
+                    name.toLowerCase().includes(q)
+                );
+
+                const resultsDiv = document.getElementById('patient-results');
+                if (results.length === 0) {
+                    resultsDiv.innerHTML = '<p style="color:#999;font-size:12px;">No patients found</p>';
+                    return;
+                }
+
+                resultsDiv.innerHTML = results.map(([id, name]) => `
+                    <div style="padding:8px;border:1px solid #ddd;border-radius:5px;cursor:pointer;background:#f9f9f9;margin-bottom:5px;" 
+                         onclick="selectPatient(${id}, '${name}')">
+                        ${name}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to search patients:', error);
+            }
+        }
+
+        const debouncedSearchPatient = debounce(searchPatient, 300);
+
+        function selectPatient(patientId, patientName) {
+            document.getElementById('selected-patient-id').value = patientId;
+            document.getElementById('selected-patient-name').value = patientName;
+            document.getElementById('selected-patient-group').style.display = 'block';
+            document.getElementById('patient-results').innerHTML = '';
+            document.getElementById('patient-search').value = patientName;
+        }
+
+        async function handleUploadReport(event) {
+            event.preventDefault();
+
+            const patientId = document.getElementById('selected-patient-id').value;
+            if (!patientId) {
+                alert('Please select a patient');
+                return;
+            }
+
+            const summary = document.getElementById('report-summary').value;
+            const details = document.getElementById('report-details').value;
+            const fileInput = document.getElementById('report-file');
+
+            try {
+                if (fileInput.files.length > 0) {
+                    // Upload with file using FormData
+                    const formData = new FormData();
+                    formData.append('patient', patientId);
+                    formData.append('summary', summary);
+                    formData.append('details', details);
+                    formData.append('file', fileInput.files[0]);
+
+                    const res = await fetch(`${API_URL}/medical_reports/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        credentials: 'include',
+                        body: formData
+                    });
+
+                    if (!res.ok) {
+                        const errData = await res.json().catch(() => ({}));
+                        throw { status: res.status, body: JSON.stringify(errData) };
+                    }
+                } else {
+                    // Upload without file using JSON
+                    await apiRequest('/medical_reports/', {
+                        method: 'POST',
+                        body: {
+                            patient: patientId,
+                            summary,
+                            details
+                        }
+                    });
+                }
+
+                alert('Report uploaded successfully!');
+                event.target.reset();
+                document.getElementById('selected-patient-group').style.display = 'none';
+                document.getElementById('selected-patient-id').value = '';
+            } catch (error) {
+                console.error('Failed to upload report:', error);
+                alert(sanitizeError(error.body) || `Failed to upload report (status ${error.status})`);
+            }
+        }
+
+        document.getElementById('patient-search').addEventListener('input', (e) => {
+            debouncedSearchPatient(e.target.value);
+        });
+
+        initializeDashboard();
+    </script>
+</body>
+</html>
