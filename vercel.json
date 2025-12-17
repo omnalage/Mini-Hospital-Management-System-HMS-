@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "hms_backend/Dockerfile", "use": "@vercel/docker" }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "/$1" }
+  ]
+}
