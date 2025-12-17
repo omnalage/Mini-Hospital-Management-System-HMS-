@@ -1,0 +1,23 @@
+# This file documents all dependencies across the HMS project
+
+## Backend (Django)
+Django==4.2.7
+djangorestframework==3.14.0
+django-cors-headers==4.3.1
+psycopg2-binary==2.9.9
+python-decouple==3.8
+
+## Serverless/Email
+# See serverless_email/requirements.txt for Python dependencies
+# Node.js packages managed by serverless_email/package.json
+
+## Installation
+
+### Backend
+pip install -r hms_backend/requirements.txt
+
+### Serverless Email Service
+npm install -g serverless
+cd serverless_email
+npm install
+pip install -r requirements.txt

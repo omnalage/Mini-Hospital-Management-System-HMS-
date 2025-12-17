@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HMS - Hospital Management System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            overflow: auto;
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            min-height: 600px;
+            height: auto;
+        }
+        
+        .left-panel {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            width: 40%;
+        }
+        
+        .right-panel {
+            padding: 40px 35px;
+            width: 60%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            overflow-y: auto;
+            max-height: 90vh;
+        }
+        
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        
+        .welcome-text h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .welcome-text p {
+            font-size: 14px;
+            line-height: 1.6;
+            opacity: 0.9;
+        }
+        
+        .form-container h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 22px;
+            margin-top: 0;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .btn-toggle {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            background: white;
+            color: #333;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-toggle.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .form-group {
+            margin-bottom: 11px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 4px;
+            color: #333;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 13px;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .btn-submit {
+            width: 100%;
+            padding: 10px 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+            margin-top: 8px !important;
+        }
+        
+        .btn-secondary:hover {
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+        
+        .btn-alt {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+            margin-top: 8px !important;
+        }
+        
+        .btn-alt:hover {
+            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4);
+        }
+        
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            margin-top: 18px;
+        }
+        
+        .button-group .btn-submit:first-child {
+            margin-top: 0;
+        }
+        
+        .login-link {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .login-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .left-panel, .right-panel {
+                width: 100%;
+            }
+            
+            .left-panel {
+                padding: 40px 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left-panel">
+            <div class="logo">🏥 HMS</div>
+            <div class="welcome-text">
+                <h1>Welcome to HMS</h1>
+                <p>Hospital Management System - Manage your health appointments with ease. Sign up to get started or log in to your existing account.</p>
+            </div>
+        </div>
+        
+        <div class="right-panel">
+            <div class="form-container">
+                <div class="btn-group">
+                    <button class="btn-toggle active" onclick="showForm('login-form')">Login</button>
+                    <button class="btn-toggle" onclick="showForm('signup-type')">Sign Up</button>
+                </div>
+                
+                <!-- Login Form -->
+                <div id="login-form" class="form-section">
+                    <h2>Login</h2>
+                    <div class="error-message" id="login-error"></div>
+                    <form onsubmit="handleLogin(event)">
+                        <div class="form-group">
+                            <label for="login-username">Username</label>
+                            <input type="text" id="login-username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">Password</label>
+                            <input type="password" id="login-password" required>
+                        </div>
+                        <button type="submit" class="btn-submit">Login</button>
+                    </form>
+                </div>
+                
+                <!-- Sign Up Type Selection -->
+                <div id="signup-type" class="form-section hidden">
+                    <h2>Sign Up As</h2>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 30px;">
+                        <button class="btn-submit" onclick="showForm('patient-signup')">👤 Patient</button>
+                        <button class="btn-submit" onclick="showForm('doctor-signup')">👨‍⚕️ Doctor</button>
+                    </div>
+                </div>
+                
+                <!-- Patient Sign Up Form -->
+                <div id="patient-signup" class="form-section hidden">
+                    <h2>Patient Sign Up</h2>
+                    <div class="error-message" id="patient-error"></div>
+                    <form onsubmit="handlePatientSignUp(event)">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="patient-firstname">First Name</label>
+                                <input type="text" id="patient-firstname">
+                            </div>
+                            <div class="form-group">
+                                <label for="patient-lastname">Last Name</label>
+                                <input type="text" id="patient-lastname">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="patient-username">Username</label>
+                            <input type="text" id="patient-username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="patient-email">Email</label>
+                            <input type="email" id="patient-email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="patient-phone">Phone Number</label>
+                            <input type="tel" id="patient-phone">
+                        </div>
+                        <div class="form-group">
+                            <label for="patient-password">Password (min 8 characters)</label>
+                            <input type="password" id="patient-password" required minlength="8">
+                        </div>
+                        <div class="button-group">
+                            <button type="submit" class="btn-submit">Sign Up as Patient</button>
+                            <button type="button" class="btn-submit btn-alt" onclick="showForm('doctor-signup')">Sign Up as Doctor Instead</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Doctor Sign Up Form -->
+                <div id="doctor-signup" class="form-section hidden">
+                    <h2>Doctor Sign Up</h2>
+                    <div class="error-message" id="doctor-error"></div>
+                    <form onsubmit="handleDoctorSignUp(event)">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="doctor-firstname">First Name</label>
+                                <input type="text" id="doctor-firstname">
+                            </div>
+                            <div class="form-group">
+                                <label for="doctor-lastname">Last Name</label>
+                                <input type="text" id="doctor-lastname">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="doctor-username">Username</label>
+                            <input type="text" id="doctor-username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="doctor-email">Email</label>
+                            <input type="email" id="doctor-email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="doctor-specialization">Specialization</label>
+                            <select id="doctor-specialization" required>
+                                <option value="">Select Specialization</option>
+                                <option value="Cardiology">Cardiology</option>
+                                <option value="Dermatology">Dermatology</option>
+                                <option value="Neurology">Neurology</option>
+                                <option value="Orthopedics">Orthopedics</option>
+                                <option value="General Practitioner">General Practitioner</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="doctor-license">License Number</label>
+                            <input type="text" id="doctor-license" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="doctor-experience">Years of Experience</label>
+                            <input type="number" id="doctor-experience" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="doctor-password">Password (min 8 characters)</label>
+                            <input type="password" id="doctor-password" required minlength="8">
+                        </div>
+                        <div class="button-group">
+                            <button type="submit" class="btn-submit">Sign Up as Doctor</button>
+                            <button type="button" class="btn-submit btn-secondary" onclick="showForm('patient-signup')">Sign Up as Patient Instead</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Use a relative API path so requests are same-origin (avoids localhost vs 127.0.0.1 cookie issues)
+        const API_URL = '/api';
+
+        // Sanitize server error responses so we don't inject raw HTML (Django debug pages)
+        function sanitizeError(err) {
+            if (!err) return '';
+            if (typeof err !== 'string') return String(err);
+            // Remove any HTML tags and collapse whitespace
+            const stripped = err.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+            if (stripped.length > 0) return stripped;
+            return 'Server error';
+        }
+
+        // Read a cookie value (for CSRF token)
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return '';
+        }
+        
+        function showForm(formId) {
+            // Hide all forms
+            document.querySelectorAll('.form-section').forEach(form => {
+                form.classList.add('hidden');
+            });
+            
+            // Show selected form
+            const el = document.getElementById(formId);
+            if (el) {
+                el.classList.remove('hidden');
+            } else {
+                console.warn('showForm: element not found', formId);
+            }
+            
+            // Update button states
+            document.querySelectorAll('.btn-toggle').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            if (formId === 'login-form') {
+                document.querySelectorAll('.btn-toggle')[0].classList.add('active');
+            } else if (formId === 'signup-type' || formId === 'patient-signup' || formId === 'doctor-signup') {
+                document.querySelectorAll('.btn-toggle')[1].classList.add('active');
+            }
+        }
+        
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/login/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, password })
+                });
+                
+                let data;
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    data = { error: await response.text() };
+                }
+
+                if (response.ok) {
+                    localStorage.setItem('user', JSON.stringify(data));
+                    // Redirect based on role
+                    const role = data.role;
+                    window.location.href = role === 'doctor' ? '/dashboard/doctor' : '/dashboard/patient';
+                } else {
+                    const raw = (data && (data.error || data)) || await response.text();
+                    const message = `Login failed (status ${response.status}): ${sanitizeError(raw)}`;
+                    document.getElementById('login-error').textContent = message;
+                    document.getElementById('login-error').style.display = 'block';
+                    // Log full response for debugging
+                    console.error('Login error response:', { status: response.status, body: data || raw });
+                }
+            } catch (error) {
+                document.getElementById('login-error').textContent = 'Network error';
+                document.getElementById('login-error').style.display = 'block';
+            }
+        }
+        
+        async function handlePatientSignUp(event) {
+            event.preventDefault();
+            
+            const data = {
+                username: document.getElementById('patient-username').value,
+                email: document.getElementById('patient-email').value,
+                password: document.getElementById('patient-password').value,
+                first_name: document.getElementById('patient-firstname').value,
+                last_name: document.getElementById('patient-lastname').value,
+                phone_number: document.getElementById('patient-phone').value,
+                role: 'patient'
+            };
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/patient_signup/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(data)
+                });
+                
+                let result;
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('application/json')) {
+                    result = await response.json();
+                } else {
+                    result = { error: await response.text() };
+                }
+
+                if (response.ok) {
+                    alert('Sign up successful! Please log in.');
+                    showForm('login-form');
+                } else {
+                    const raw = typeof result === 'string' ? result : Object.values(result).flat().join(', ');
+                    const errorMsg = sanitizeError(raw) || 'Sign up failed';
+                    document.getElementById('patient-error').textContent = errorMsg;
+                    document.getElementById('patient-error').style.display = 'block';
+                    console.error('Patient signup error response:', result);
+                }
+            } catch (error) {
+                document.getElementById('patient-error').textContent = 'Network error';
+                document.getElementById('patient-error').style.display = 'block';
+            }
+        }
+        
+        async function handleDoctorSignUp(event) {
+            event.preventDefault();
+            
+            const data = {
+                username: document.getElementById('doctor-username').value,
+                email: document.getElementById('doctor-email').value,
+                password: document.getElementById('doctor-password').value,
+                first_name: document.getElementById('doctor-firstname').value,
+                last_name: document.getElementById('doctor-lastname').value,
+                specialization: document.getElementById('doctor-specialization').value,
+                license_number: document.getElementById('doctor-license').value,
+                experience_years: parseInt(document.getElementById('doctor-experience').value),
+                role: 'doctor'
+            };
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/doctor_signup/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(data)
+                });
+                
+                let result;
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('application/json')) {
+                    result = await response.json();
+                } else {
+                    result = { error: await response.text() };
+                }
+
+                if (response.ok) {
+                    alert('Sign up successful! Please log in.');
+                    showForm('login-form');
+                } else {
+                    const raw = typeof result === 'string' ? result : Object.values(result).flat().join(', ');
+                    const errorMsg = sanitizeError(raw) || 'Sign up failed';
+                    document.getElementById('doctor-error').textContent = errorMsg;
+                    document.getElementById('doctor-error').style.display = 'block';
+                    console.error('Doctor signup error response:', result);
+                }
+            } catch (error) {
+                document.getElementById('doctor-error').textContent = 'Network error';
+                document.getElementById('doctor-error').style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

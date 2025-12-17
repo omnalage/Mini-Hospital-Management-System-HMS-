@@ -1,0 +1,50 @@
+service: hms-email-service
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: python3.11
+  region: us-east-1
+  environment:
+    SENDER_EMAIL: ${env:SENDER_EMAIL}
+    MAILGUN_API_KEY: ${env:MAILGUN_API_KEY}
+    MAILGUN_DOMAIN: ${env:MAILGUN_DOMAIN}
+
+plugins:
+  - serverless-offline
+  - serverless-python-requirements
+
+functions:
+  sendAppointmentConfirmation:
+    handler: handlers/send_appointment_confirmation.send_confirmation
+    events:
+      - http:
+          path: send-confirmation
+          method: post
+          cors: true
+    environment:
+      PYTHONPATH: /var/task
+
+  sendReminderEmail:
+    handler: handlers/send_reminder.send_reminder
+    events:
+      - schedule:
+          rate: cron(0 8 * * ? *)
+          description: 'Send appointment reminders every day at 8 AM'
+    environment:
+      PYTHONPATH: /var/task
+
+  sendCancellationEmail:
+    handler: handlers/send_cancellation.send_cancellation
+    events:
+      - http:
+          path: send-cancellation
+          method: post
+          cors: true
+    environment:
+      PYTHONPATH: /var/task
+
+custom:
+  pythonRequirements:
+    dockerizePip: true

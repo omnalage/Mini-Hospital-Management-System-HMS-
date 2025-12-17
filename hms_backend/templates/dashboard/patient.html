@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Dashboard - HMS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+        }
+        
+        .navbar {
+            background: white;
+            padding: 15px 30px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar-brand {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .navbar-menu {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .navbar-menu a, .logout-btn {
+            color: #666;
+            text-decoration: none;
+            padding: 8px 15px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 14px;
+        }
+        
+        .logout-btn {
+            background: #667eea;
+            color: white;
+            border-radius: 5px;
+        }
+        
+        .logout-btn:hover {
+            background: #764ba2;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 15px;
+        }
+        
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .search-bar input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #764ba2;
+        }
+        
+        .btn-secondary {
+            background: #ddd;
+            color: #333;
+        }
+        
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #da190b;
+        }
+        
+        .doctor-card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .doctor-info {
+            flex: 1;
+        }
+        
+        .doctor-info h3 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .doctor-info p {
+            color: #666;
+            font-size: 14px;
+            margin: 3px 0;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .table th {
+            background: #f5f5f5;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #ddd;
+        }
+        
+        .table td {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .table tr:hover {
+            background: #f9f9f9;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-scheduled {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .status-completed {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+        
+        .status-cancelled {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .modal-close:hover {
+            color: #333;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        
+        .success-message.show {
+            display: block;
+        }
+        
+        .slots-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .slot {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .slot:hover {
+            border-color: #667eea;
+            background: #f0f0ff;
+        }
+        
+        .slot.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .slot small {
+            display: block;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-brand">🏥 HMS - Patient Dashboard</div>
+        <div class="navbar-menu">
+            <a href="#available-doctors">Available Doctors</a>
+            <a href="#my-appointments">My Appointments</a>
+            <span id="patient-name" style="color: #666;"></span>
+            <button class="logout-btn" onclick="handleLogout()">Logout</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>Welcome, <span id="welcome-name"></span></h1>
+            <p>Book an appointment with a doctor from our network</p>
+        </div>
+        
+        <!-- Available Doctors Section -->
+        <div class="section-title" id="available-doctors">👨‍⚕️ Available Doctors</div>
+        <div class="card">
+            <div class="search-bar">
+                <input type="text" id="search-input" placeholder="Search doctors by name or specialization...">
+                <button class="btn btn-secondary" onclick="searchDoctors()">Search</button>
+            </div>
+            <div id="doctors-list"></div>
+            <div class="empty-state" id="no-doctors">
+                <div class="empty-state-icon">👨‍⚕️</div>
+                <p>No doctors available</p>
+            </div>
+        </div>
+        
+        <!-- My Appointments Section -->
+        <div class="section-title" id="my-appointments">📅 My Appointments</div>
+        <div class="card">
+            <table class="table" id="appointments-table">
+                <thead>
+                    <tr>
+                        <th>Doctor</th>
+                        <th>Specialization</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="appointments-body"></tbody>
+            </table>
+            <div class="empty-state" id="no-appointments">
+                <div class="empty-state-icon">📭</div>
+                <p>No appointments booked yet. Book your first appointment!</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Book Appointment Modal -->
+    <div class="modal" id="book-modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeBookModal()">&times;</span>
+            <h2>Book Appointment</h2>
+            <div class="success-message" id="booking-success">Appointment booked successfully!</div>
+            <form onsubmit="handleBookAppointment(event)">
+                <div class="form-group">
+                    <label>Doctor</label>
+                    <input type="text" id="selected-doctor" disabled>
+                </div>
+                
+                <div class="form-group">
+                    <label for="appointment-reason">Reason for Visit</label>
+                    <textarea id="appointment-reason" placeholder="Describe your reason for the appointment..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Select Available Slot</label>
+                    <div class="slots-container" id="slots-container"></div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 20px;">Book Appointment</button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // Use relative API path so requests are same-origin and cookies are sent
+        const API_URL = '/api';
+        let currentUser = null;
+        let selectedDoctor = null;
+        let selectedSlot = null;
+        
+        function handleLogout() {
+            localStorage.removeItem('user');
+            window.location.href = '/';
+        }
+        
+        async function initializeDashboard() {
+            try {
+                const response = await fetch(`${API_URL}/auth/current_user/`, {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    window.location.href = '/';
+                    return;
+                }
+                
+                const data = await response.json();
+                currentUser = data;
+                
+                document.getElementById('welcome-name').textContent = currentUser.user.first_name || currentUser.user.username;
+                document.getElementById('patient-name').textContent = currentUser.user.first_name || currentUser.user.username;
+                
+                loadAvailableDoctors();
+                loadMyAppointments();
+            } catch (error) {
+                console.error('Failed to initialize dashboard:', error);
+                window.location.href = '/';
+            }
+        }
+        
+        async function loadAvailableDoctors() {
+            try {
+                const response = await fetch(`${API_URL}/doctors/`, {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const doctors = await response.json();
+                    const doctorsList = document.getElementById('doctors-list');
+                    const noDoctors = document.getElementById('no-doctors');
+                    
+                    if (doctors.length === 0) {
+                        doctorsList.innerHTML = '';
+                        noDoctors.style.display = 'block';
+                    } else {
+                        noDoctors.style.display = 'none';
+                        doctorsList.innerHTML = doctors.map(doctor => `
+                            <div class="doctor-card">
+                                <div class="doctor-info">
+                                    <h3>Dr. ${doctor.user.first_name} ${doctor.user.last_name}</h3>
+                                    <p><strong>Specialization:</strong> ${doctor.specialization}</p>
+                                    <p><strong>Experience:</strong> ${doctor.experience_years} years</p>
+                                    <p><strong>Consultation Fee:</strong> ₹${doctor.consultation_fee}</p>
+                                </div>
+                                <button class="btn btn-primary" onclick="openBookModal(${doctor.id}, '${doctor.user.first_name} ${doctor.user.last_name}')">Book Now</button>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load doctors:', error);
+            }
+        }
+        
+        async function loadMyAppointments() {
+            try {
+                const response = await fetch(`${API_URL}/appointments/`, {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const appointments = await response.json();
+                    const tbody = document.getElementById('appointments-body');
+                    const noAppointments = document.getElementById('no-appointments');
+                    
+                    if (appointments.length === 0) {
+                        tbody.innerHTML = '';
+                        noAppointments.style.display = 'block';
+                        document.getElementById('appointments-table').style.display = 'none';
+                    } else {
+                        noAppointments.style.display = 'none';
+                        document.getElementById('appointments-table').style.display = 'table';
+                        tbody.innerHTML = appointments.map(apt => `
+                            <tr>
+                                <td>${apt.doctor_name}</td>
+                                <td>-</td>
+                                <td>${apt.appointment_date}</td>
+                                <td>${apt.start_time}</td>
+                                <td><span class="status-badge status-${apt.status}">${apt.status.toUpperCase()}</span></td>
+                                <td>
+                                    ${apt.status === 'scheduled' ? `<button class="btn btn-danger" onclick="cancelAppointment(${apt.id})">Cancel</button>` : '-'}
+                                </td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load appointments:', error);
+            }
+        }
+        
+        async function openBookModal(doctorId, doctorName) {
+            selectedDoctor = doctorId;
+            selectedSlot = null;
+            
+            document.getElementById('selected-doctor').value = doctorName;
+            document.getElementById('appointment-reason').value = '';
+            
+            try {
+                const response = await fetch(`${API_URL}/doctors/${doctorId}/available_slots/`, {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const slots = await response.json();
+                    const slotsContainer = document.getElementById('slots-container');
+                    
+                    if (slots.length === 0) {
+                        slotsContainer.innerHTML = '<p style="text-align: center; color: #999;">No available slots</p>';
+                    } else {
+                        slotsContainer.innerHTML = slots.map((slot, idx) => `
+                            <div class="slot" onclick="selectSlot(this, '${slot.start_time}', '${slot.end_time}')" data-idx="${idx}">
+                                <strong>${slot.start_time}</strong>
+                                <small>${slot.day_of_week}</small>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load slots:', error);
+            }
+            
+            document.getElementById('book-modal').classList.add('active');
+        }
+        
+        function closeBookModal() {
+            document.getElementById('book-modal').classList.remove('active');
+            document.getElementById('booking-success').classList.remove('show');
+        }
+        
+        function selectSlot(element, startTime, endTime) {
+            document.querySelectorAll('.slot').forEach(slot => slot.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedSlot = { start_time: startTime, end_time: endTime };
+        }
+        
+        async function handleBookAppointment(event) {
+            event.preventDefault();
+            
+            if (!selectedSlot) {
+                alert('Please select a time slot');
+                return;
+            }
+            
+            const today = new Date();
+            const appointmentDate = today.toISOString().split('T')[0];
+            
+            const data = {
+                doctor_id: selectedDoctor,
+                appointment_date: appointmentDate,
+                start_time: selectedSlot.start_time,
+                end_time: selectedSlot.end_time,
+                reason: document.getElementById('appointment-reason').value
+            };
+            
+            try {
+                const response = await fetch(`${API_URL}/appointments/book_appointment/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    document.getElementById('booking-success').classList.add('show');
+                    setTimeout(() => {
+                        closeBookModal();
+                        loadMyAppointments();
+                    }, 1500);
+                } else {
+                    const error = await response.json();
+                    alert(error.error || 'Failed to book appointment');
+                }
+            } catch (error) {
+                console.error('Failed to book appointment:', error);
+            }
+        }
+        
+        async function cancelAppointment(appointmentId) {
+            if (confirm('Are you sure you want to cancel this appointment?')) {
+                try {
+                    const response = await fetch(`${API_URL}/appointments/${appointmentId}/cancel_appointment/`, {
+                        method: 'POST',
+                        credentials: 'include'
+                    });
+                    
+                    if (response.ok) {
+                        loadMyAppointments();
+                    }
+                } catch (error) {
+                    console.error('Failed to cancel appointment:', error);
+                }
+            }
+        }
+        
+        function searchDoctors() {
+            // Implement search functionality
+            console.log('Search triggered');
+        }
+        
+        // Initialize on page load
+        initializeDashboard();
+    </script>
+</body>
+</html>
